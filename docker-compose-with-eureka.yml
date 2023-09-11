@@ -1,0 +1,30 @@
+services:
+  config-server:
+    build: .
+    container_name: config-server
+    ports:
+      - '8888:8888'
+    networks:
+      - ms-network
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8888/actuator']
+      interval: 10s
+      timeout: 30s
+      retries: 5
+      start_period: 10s
+
+  eureka-server:
+    build: ../eureka-server/
+    container_name: eureka-server
+    ports:
+      - '8761:8761'
+    depends_on:
+      config-server:
+        condition: service_healthy
+    networks:
+      - ms-network
+
+networks:
+  ms-network:
+    driver: bridge
+    name: ms-network
