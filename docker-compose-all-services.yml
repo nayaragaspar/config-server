@@ -1,0 +1,52 @@
+services:
+  config-server:
+    build: .
+    container_name: config-server
+    ports:
+      - '8888:8888'
+    networks:
+      - ms-network
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8888/actuator']
+      interval: 5s
+      timeout: 30s
+      retries: 5
+      start_period: 10s
+
+  eureka-server:
+    build: ../eureka-server/
+    container_name: eureka-server
+    ports:
+      - '8761:8761'
+    depends_on:
+      config-server:
+        condition: service_healthy
+    networks:
+      - ms-network
+
+  apigateway:
+    build: ../ms-springcloud/apigateway
+    container_name: apigateway
+    ports:
+      - '8080:8080'
+    depends_on:
+      - eureka-server
+    networks:
+      - ms-network
+
+  msnotification:
+    build: ../ms-springcloud/ms-notification
+    container_name: msnotification
+    depends_on:
+      - eureka-server
+    networks:
+      - ms-network
+    volumes:
+      - ../ms-springcloud/ms-notification/logs:/var/lib/logs
+    env_file:
+      - ../ms-springcloud/ms-notification/.env
+
+networks:
+  ms-network:
+    driver: bridge
+    name: ms-network
